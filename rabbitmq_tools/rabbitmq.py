@@ -1,7 +1,6 @@
 import logging
 import time
 from typing import Callable, Union
-
 import pika
 
 class BadMessageStructureException(Exception):

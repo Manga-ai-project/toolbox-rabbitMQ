@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "toolbox_rabbit"
-version = "0.1.0"
+version = "0.2.0"
 description = "ABT's common tools"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -13,5 +13,7 @@ authors = [
 ]
 license = {text = "Apache 2.0"}
 dependencies = [
-    "pika"
+    "pika",
+    "aio-pika",
+    "asyncio"
 ]
