@@ -6,21 +6,19 @@ from .rabbitmq import BadMessageStructureException
 import aio_pika
 
 class RabbitBaseAIO:
-    def __init__(self, uri: str, prefetch_count: int) -> None:
+    def __init__(self, uri: str) -> None:
         self.uri = uri
         self.connection: aio_pika.RobustConnection | None = None
         self.channel: aio_pika.abc.AbstractChannel | None = None
-        self.prefetch_count = prefetch_count
 
     async def connect(self):
-        if self.connection and self.connection.is_closed:
+        if self.connection and not self.connection.is_closed:
             return
 
         logging.info('Connecting to RabbitMQ')
 
         self.connection = await aio_pika.connect_robust(self.uri)
-        self.channel = self.connection.channel()
-        self.channel.prefetch(self.prefetch_count)
+        self.channel = await self.connection.channel()
 
         logging.info('Connected to RabbitMQ')
 
@@ -30,8 +28,8 @@ class RabbitBaseAIO:
             logging.info("Connection closed RabbitMQ")
 
 class RabbitProducerAIO(RabbitBaseAIO):
-    def __init__(self, uri: str, prefetch_count: int, exchange: str, key: str):
-        super().__init__(uri, prefetch_count)
+    def __init__(self, uri: str, exchange: str, key: str):
+        super().__init__(uri)
         self.exchange = exchange
         self.routing_key = key
 
@@ -68,8 +66,21 @@ class RabbitProducerAIO(RabbitBaseAIO):
 
 class RabbitConsumerAIO(RabbitBaseAIO):
     def __init__(self, uri: str, prefetch_count: int, queue: str):
-        super().__init__(uri, prefetch_count)
+        super().__init__(uri)
         self.queue = queue
+        self.prefetch_count = prefetch_count
+
+    async def connect(self):
+        if self.connection and not self.connection.is_closed:
+            return
+
+        logging.info('Connecting to RabbitMQ')
+
+        self.connection = await aio_pika.connect_robust(self.uri)
+        self.channel = await self.connection.channel()
+        await self.channel.set_qos(prefetch_count=self.prefetch_count)
+
+        logging.info('Connected to RabbitMQ')
 
     async def consume(self, handler_func: Callable, extra_func: Callable=None):
 
