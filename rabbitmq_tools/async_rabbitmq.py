@@ -38,10 +38,11 @@ class RabbitProducerAIO(RabbitBaseAIO):
             try:
                 await self.connect()
 
-                await self.channel.publish(
+                exchange = await self.channel.get_exchange(self.exchange)
+
+                await exchange.publish(
                     body=aio_pika.Message(body=body.encode()),
                     routing_key=self.routing_key,
-                    exchange=self.exchange,
                 )
 
                 logging.info('Published message')
