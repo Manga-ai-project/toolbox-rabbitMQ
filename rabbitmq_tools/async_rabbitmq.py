@@ -2,7 +2,7 @@ import logging
 import time
 import asyncio
 from typing import Callable, Union
-from rabbitmq import BadMessageStructureException
+from .rabbitmq import BadMessageStructureException
 import aio_pika
 
 class RabbitBaseAIO:
