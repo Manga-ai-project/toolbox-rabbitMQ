@@ -71,7 +71,7 @@ class RabbitConsumerAIO(RabbitBaseAIO):
         super().__init__(uri, prefetch_count)
         self.queue = queue
 
-    async def consume(self, handler_func: Callable, extra_func: Callable):
+    async def consume(self, handler_func: Callable, extra_func: Callable=None):
 
         async def _callback(message: aio_pika.IncomingMessage):
             async with message.process():
