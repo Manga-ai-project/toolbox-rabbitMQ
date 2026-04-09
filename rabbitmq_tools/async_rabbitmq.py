@@ -39,7 +39,7 @@ class RabbitProducerAIO(RabbitBaseAIO):
                 await self.connect()
 
                 await self.channel.default_exchange.publish(
-                    aio_pika.Message(body=body),
+                    aio_pika.Message(body=body.encode()),
                     routing_key=self.routing_key
                 )
 
