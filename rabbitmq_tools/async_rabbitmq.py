@@ -28,13 +28,14 @@ class RabbitBaseAIO:
             logging.info("Connection closed RabbitMQ")
 
 class RabbitProducerAIO(RabbitBaseAIO):
-    def __init__(self, uri: str, exchange: str, key: str):
+    def __init__(self, uri: str, exchange: str, key: str, retries: int = 3) -> None:
         super().__init__(uri)
         self.exchange = exchange
         self.routing_key = key
+        self.retries = retries
 
-    async def produce(self, body: Union[bytes, str], retries: int = 3) -> bool:
-        for attempt in range(1, retries + 1):
+    async def produce(self, body: Union[bytes, str]) -> bool:
+        for attempt in range(1, self.retries + 1):
             try:
                 await self.connect()
 
