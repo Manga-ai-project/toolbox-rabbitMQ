@@ -32,7 +32,7 @@ class RabbitProducerAIO(RabbitBaseAIO):
         super().__init__(uri)
         self.exchange = exchange
         self.routing_key = key
-        self.retries = retries
+        self.retries = int(retries)
 
     async def produce(self, body: Union[bytes, str]) -> bool:
         for attempt in range(1, self.retries + 1):
