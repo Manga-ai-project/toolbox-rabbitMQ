@@ -90,6 +90,7 @@ class RabbitConsumerAIO(RabbitBaseAIO):
         async def _callback(message: aio_pika.IncomingMessage):
             async with message.process():
                 try:
+                    logging.info('Received message')
                     if asyncio.iscoroutinefunction(handler_func):
                         result = await handler_func(message)
                     else:
@@ -102,6 +103,8 @@ class RabbitConsumerAIO(RabbitBaseAIO):
                             ok = extra_func(result)
                         if not ok:
                             raise Exception("Extra callback functional failed")
+
+                    logging.info('Successfully consumed message')
 
                 except  ValueError as e1:
                     logging.warning(f"Bad message: {e1}")
