@@ -41,8 +41,10 @@ class RabbitProducerAIO(RabbitBaseAIO):
 
                 exchange = await self.channel.get_exchange(self.exchange)
 
+                body_bytes = body if isinstance(body, bytes) else body.encode()
+
                 await exchange.publish(
-                    aio_pika.Message(body=body.encode()),
+                    aio_pika.Message(body=body_bytes),
                     routing_key=self.routing_key,
                 )
 
