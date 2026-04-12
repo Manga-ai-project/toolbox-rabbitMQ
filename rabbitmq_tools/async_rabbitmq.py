@@ -32,7 +32,7 @@ class RabbitProducerAIO(RabbitBaseAIO):
         self.routing_key = key
         self.retries = int(retries)
 
-    async def produce(self, body: Union[bytes, str]) -> bool:
+    async def produce(self, body: Union[bytes, str], routing_key: str = None) -> bool:
         for attempt in range(1, self.retries + 1):
             try:
                 await self.connect()
@@ -41,9 +41,13 @@ class RabbitProducerAIO(RabbitBaseAIO):
 
                 body_bytes = body if isinstance(body, bytes) else body.encode()
 
+
+                if routing_key is None:
+                    routing_key = self.routing_key
+
                 await exchange.publish(
                     aio_pika.Message(body=body_bytes),
-                    routing_key=self.routing_key,
+                    routing_key=routing_key,
                 )
 
                 logging.info('Published message')
