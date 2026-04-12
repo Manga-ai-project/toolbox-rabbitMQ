@@ -1,8 +1,6 @@
 import logging
-import time
 import asyncio
 from typing import Callable, Union
-from .rabbitmq import BadMessageStructureException
 import aio_pika
 
 class RabbitBaseAIO:
@@ -105,7 +103,7 @@ class RabbitConsumerAIO(RabbitBaseAIO):
                         if not ok:
                             raise Exception("Extra callback functional failed")
 
-                except BadMessageStructureException as e1:
+                except  ValueError as e1:
                     logging.warning(f"Bad message: {e1}")
                     await message.reject(requeue=False)
 
