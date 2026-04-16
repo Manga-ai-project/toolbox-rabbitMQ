@@ -89,41 +89,37 @@ class RabbitConsumerAIO(RabbitBaseAIO):
 
         logging.info('Connected to RabbitMQ')
 
-    async def consume(self, handler_func: Callable, extra_func: Callable=None):
-
+    async def consume(self, handler_func: Callable, extra_func: Callable = None):
         async def _callback(message: aio_pika.IncomingMessage):
-            async with message.process():
-                try:
-                    logging.info('Received message')
-                    if asyncio.iscoroutinefunction(handler_func):
-                        result = await handler_func(message)
+            logging.info('Received message')
+
+            try:
+                # Вызываем handler, он сам решит когда ack/nack
+                if asyncio.iscoroutinefunction(handler_func):
+                    result = await handler_func(message)
+                else:
+                    result = handler_func(message.body)
+
+                if extra_func is not None:
+                    if asyncio.iscoroutinefunction(extra_func):
+                        ok = await extra_func(result)
                     else:
-                        result = handler_func(message.body)
+                        ok = extra_func(result)
+                    if not ok:
+                        raise Exception("Extra callback functional failed")
 
-                    if extra_func is not None:
-                        if asyncio.iscoroutinefunction(extra_func):
-                            ok = await extra_func(result)
-                        else:
-                            ok = extra_func(result)
-                        if not ok:
-                            raise Exception("Extra callback functional failed")
-
-                    logging.info('Successfully consumed message')
-
-                except  ValueError as e1:
-                    logging.warning(f"Bad message: {e1}")
-                    await message.reject(requeue=False)
-
-                except Exception as e2:
-                    logging.error(f"Handler error: {e2}")
-                    await message.reject(requeue=True)
+            except Exception as e:
+                logging.exception(f"Handler crashed: {e}")
+                # Если handler упал с исключением и не сделал nack — делаем nack здесь
+                try:
+                    await message.nack(requeue=True)
+                except:
+                    pass
 
         await self.connect()
         queue = await self.channel.declare_queue(self.queue, durable=True)
-
         await queue.consume(_callback)
         await asyncio.Future()
-
         logging.info("Started consuming")
 
 
