@@ -81,40 +81,43 @@ class RabbitConsumerAIO(RabbitBaseAIO):
         if self.connection and not self.connection.is_closed:
             return
 
-        logging.info('Connecting to RabbitMQ')
+        logging.info('Consumer is connecting to RabbitMQ')
 
         self.connection = await aio_pika.connect_robust(self.uri)
         self.channel = await self.connection.channel()
         await self.channel.set_qos(prefetch_count=self.prefetch_count)
 
-        logging.info('Connected to RabbitMQ')
+        logging.info('Consumer is connected to RabbitMQ')
 
     async def consume(self, handler_func: Callable, extra_func: Callable = None):
         async def _callback(message: aio_pika.IncomingMessage):
             logging.info('Received message')
 
-            try:
-                # Вызываем handler, он сам решит когда ack/nack
-                if asyncio.iscoroutinefunction(handler_func):
-                    result = await handler_func(message)
-                else:
-                    result = handler_func(message.body)
-
-                if extra_func is not None:
-                    if asyncio.iscoroutinefunction(extra_func):
-                        ok = await extra_func(result)
-                    else:
-                        ok = extra_func(result)
-                    if not ok:
-                        raise Exception("Extra callback functional failed")
-
-            except Exception as e:
-                logging.exception(f"Handler crashed: {e}")
-                # Если handler упал с исключением и не сделал nack — делаем nack здесь
+            # Запускаем обработку в фоне, НЕ ЖДЁМ
+            async def handle():
                 try:
-                    await message.nack(requeue=True)
-                except:
-                    pass
+                    if asyncio.iscoroutinefunction(handler_func):
+                        result = await handler_func(message)
+                    else:
+                        result = handler_func(message.body)
+
+                    if extra_func is not None:
+                        if asyncio.iscoroutinefunction(extra_func):
+                            ok = await extra_func(result)
+                        else:
+                            ok = extra_func(result)
+                        if not ok:
+                            raise Exception("Extra callback functional failed")
+
+                except Exception as e:
+                    logging.exception(f"Handler crashed: {e}")
+                    try:
+                        await message.nack(requeue=True)
+                    except:
+                        pass
+
+            # Создаём фоновую задачу и сразу выходим
+            asyncio.create_task(handle())
 
         await self.connect()
         queue = await self.channel.declare_queue(self.queue, durable=True)
