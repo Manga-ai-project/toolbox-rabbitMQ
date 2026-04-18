@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import time
 from typing import Callable, Union
 import aio_pika
 
@@ -91,15 +92,16 @@ class RabbitConsumerAIO(RabbitBaseAIO):
 
     async def consume(self, handler_func: Callable, extra_func: Callable = None):
         async def _callback(message: aio_pika.IncomingMessage):
+            t_arr = time.time()
             logging.info('Received message')
 
             # Запускаем обработку в фоне, НЕ ЖДЁМ
             async def handle():
                 try:
                     if asyncio.iscoroutinefunction(handler_func):
-                        result = await handler_func(message)
+                        result = await handler_func(message, t_arr)
                     else:
-                        result = handler_func(message.body)
+                        result = handler_func(message.body, t_arr)
 
                     if extra_func is not None:
                         if asyncio.iscoroutinefunction(extra_func):
