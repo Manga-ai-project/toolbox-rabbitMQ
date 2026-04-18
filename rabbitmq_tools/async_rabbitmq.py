@@ -92,7 +92,7 @@ class RabbitConsumerAIO(RabbitBaseAIO):
 
     async def consume(self, handler_func: Callable, extra_func: Callable = None):
         async def _callback(message: aio_pika.IncomingMessage):
-            t_arr = time.time()
+            t_arr = time.monotonic()
             logging.info('Received message')
 
             # Запускаем обработку в фоне, НЕ ЖДЁМ
