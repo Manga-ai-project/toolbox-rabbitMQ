@@ -51,7 +51,7 @@ class RabbitProducerAIO(RabbitBaseAIO):
                     routing_key=routing_key,
                 )
 
-                logging.info('Published message')
+                logging.debug('Published message')
                 return True
 
             except (
@@ -93,7 +93,7 @@ class RabbitConsumerAIO(RabbitBaseAIO):
     async def consume(self, handler_func: Callable, extra_func: Callable = None):
         async def _callback(message: aio_pika.IncomingMessage):
             t_arr = time.monotonic()
-            logging.info('Received message')
+            logging.debug('Received message')
 
             # Запускаем обработку в фоне, НЕ ЖДЁМ
             async def handle():
